@@ -13,6 +13,9 @@ var (
 	defaultNewline     = []rune{'\n'}
 )
 
+const ESCAPE_ITERM_IMAGE_IN = "\x1b]1337;"
+const ESCAPE_ITERM_IMAGE_OUT = '\x07'
+
 // WordWrap contains settings and state for customisable text reflowing with
 // support for ANSI escape sequences. This means you can style your terminal
 // output without affecting the word wrapping algorithm.
@@ -87,6 +90,10 @@ func inGroup(a []rune, c rune) bool {
 	return false
 }
 
+func IsImageEscapeSequence(s string) bool {
+	return strings.HasPrefix(s, ESCAPE_ITERM_IMAGE_IN)
+}
+
 // Write is used to write more content to the word-wrap buffer.
 func (w *WordWrap) Write(b []byte) (int, error) {
 	if w.Limit == 0 {
@@ -98,17 +105,29 @@ func (w *WordWrap) Write(b []byte) (int, error) {
 		s = strings.Replace(strings.TrimSpace(s), "\n", " ", -1)
 	}
 
+
+	var escape_seq = ""
+
 	for _, c := range s {
 		if c == '\x1B' {
 			// ANSI escape sequence
 			_, _ = w.word.WriteRune(c)
+      escape_seq = ""
+			escape_seq += string(c)
 			w.ansi = true
+		} else if c == ESCAPE_ITERM_IMAGE_OUT {
+			_, _ = w.word.WriteRune(c)
+			w.ansi = false
+			escape_seq = ""
 		} else if w.ansi {
 			_, _ = w.word.WriteRune(c)
+			escape_seq += string(c)
 			if (c >= 0x40 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) {
 				// ANSI sequence terminated
 				w.ansi = false
 			}
+		} else if IsImageEscapeSequence(escape_seq) {
+			_, _ = w.word.WriteRune(c)
 		} else if inGroup(w.Newline, c) {
 			// end of current line
 			// see if we can add the content of the space buffer to the current line
