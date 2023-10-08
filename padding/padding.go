@@ -59,17 +59,32 @@ func String(s string, width uint) string {
 	return string(Bytes([]byte(s), width))
 }
 
+func IsImageEscapeSequence(s string) bool {
+	return strings.Contains(s, "\x1B]1337;")
+}
+
 // Write is used to write content to the padding buffer.
 func (w *Writer) Write(b []byte) (int, error) {
+	var escape_seq = ""
 	for _, c := range string(b) {
 		if c == '\x1B' {
 			// ANSI escape sequence
+			escape_seq = ""
+			escape_seq += string(c)
 			w.ansi = true
+
+		} else if c == '\x07' {
+			w.ansi = false
+			escape_seq = ""
 		} else if w.ansi {
+
+			escape_seq += string(c)
 			if (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) {
 				// ANSI sequence terminated
 				w.ansi = false
 			}
+		} else if IsImageEscapeSequence(escape_seq) {
+      
 		} else {
 			w.lineLen += runewidth.StringWidth(string(c))
 

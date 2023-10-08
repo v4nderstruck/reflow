@@ -3,6 +3,7 @@ package ansi
 import (
 	"bytes"
 	"io"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -14,6 +15,10 @@ type Writer struct {
 	lastseq    bytes.Buffer
 	seqchanged bool
 	runeBuf    []byte
+}
+
+func IsImageEscapeSequence(s string) bool {
+ return strings.Contains(s, "\x1b]1337;")
 }
 
 // Write is used to write content to the ANSI buffer.

@@ -65,6 +65,10 @@ func String(s string, limit int) string {
 	return string(Bytes([]byte(s), limit))
 }
 
+func IsImageEscapeSequence(s string) bool {
+	return strings.Contains(s, "\x1b]1337;")
+}
+
 func (w *Wrap) Write(b []byte) (int, error) {
 	s := strings.Replace(string(b), "\t", strings.Repeat(" ", w.TabWidth), -1)
 	if !w.KeepNewlines {
@@ -78,13 +82,21 @@ func (w *Wrap) Write(b []byte) (int, error) {
 		return w.buf.Write(b)
 	}
 
+	var escapeSequence = ""
 	for _, c := range s {
 		if c == ansi.Marker {
 			w.ansi = true
+			escapeSequence = ""
+			escapeSequence += string(c)
+		} else if c == '\x07' {
+			w.ansi = false
+			escapeSequence = ""
 		} else if w.ansi {
+      escapeSequence += string(c)
 			if ansi.IsTerminator(c) {
 				w.ansi = false
 			}
+		} else if IsImageEscapeSequence(escapeSequence) {
 		} else if inGroup(w.Newline, c) {
 			w.addNewLine()
 			w.forcefulNewline = false

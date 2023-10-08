@@ -91,7 +91,7 @@ func inGroup(a []rune, c rune) bool {
 }
 
 func IsImageEscapeSequence(s string) bool {
-	return strings.HasPrefix(s, ESCAPE_ITERM_IMAGE_IN)
+	return strings.Contains(s, ESCAPE_ITERM_IMAGE_IN)
 }
 
 // Write is used to write more content to the word-wrap buffer.

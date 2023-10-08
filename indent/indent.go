@@ -56,35 +56,34 @@ func String(s string, indent uint) string {
 	return string(Bytes([]byte(s), indent))
 }
 
-
 const ESCAPE_ITERM_IMAGE_IN = "\x1b]1337;"
 const ESCAPE_ITERM_IMAGE_OUT = '\x07'
 
-
 func IsImageEscapeSequence(s string) bool {
-	return strings.HasPrefix(s, ESCAPE_ITERM_IMAGE_IN)
+	return strings.Contains(s, ESCAPE_ITERM_IMAGE_IN)
 }
+
 // Write is used to write content to the indent buffer.
 func (w *Writer) Write(b []byte) (int, error) {
 
 	var escape_seq = ""
 	for _, c := range string(b) {
 		if c == '\x1B' {
-      escape_seq = ""
-      escape_seq += string(c)
+			escape_seq = ""
+			escape_seq += string(c)
 			// ANSI escape sequence
 			w.ansi = true
 		} else if c == ESCAPE_ITERM_IMAGE_OUT {
 			w.ansi = false
 			escape_seq = ""
-  } else if w.ansi || IsImageEscapeSequence(escape_seq) {
-      if w.ansi {
-        escape_seq += string(c)
-      }
+		} else if w.ansi {
+			escape_seq += string(c)
 			if (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) {
 				// ANSI sequence terminated
 				w.ansi = false
 			}
+		} else if IsImageEscapeSequence(escape_seq) {
+				w.ansi = false
 		} else {
 			if !w.skipIndent {
 				w.ansiWriter.ResetAnsi()
